@@ -17,13 +17,19 @@ module.new = function(port, maxtimeout)
     self.ClientTimeoutLength = 5
 
     self.LastMessage = ""
+    self.LastMessageTime = os.clock()
 
     return self
 end
 
 function module:Tick()
     local data, msgOrIp, portOrNil = self.UDP:receivefrom()
-    if data then
+    if msgOrIp == "timeout" then return end -- no message
+    
+    -- print(data)
+    -- print(msgOrIp, portOrNil)
+    -- print("--------")
+    if msgOrIp and portOrNil then
         local client = self.ConnectedClients[msgOrIp]
         if not client then
             client = ClientClass.new(self, msgOrIp, portOrNil)
@@ -31,6 +37,8 @@ function module:Tick()
         end
 
         self.LastMessage = data
+        self.LastMessageTime = os.clock()
+
         client.LastRecivedMessage = os.clock()
         client:SendMessage("gotData")
 
@@ -57,6 +65,30 @@ function module:CleanClients()
             self:RemoveClient(ip)
         end
     end 
+end
+
+local lineHeight = 16
+
+local msgCount = 0
+local function resetMsgs()
+    msgCount = 0
+end
+local function msg(text, maxWidth)
+    love.graphics.printf(text, 0, lineHeight*msgCount, maxWidth or 500)
+    msgCount = msgCount+1
+end
+
+
+function module:DrawInfo()
+    resetMsgs()
+    msg("Server Window: port:"..tostring(self.Port))
+    local timeResolution = 10
+    msg("Time Since Last Message: "..tostring(math.floor((os.clock() - self.LastMessageTime)*timeResolution)/timeResolution), math.huge)
+    msg("Active Connections:")
+
+    for id in pairs(self.ConnectedClients) do
+        msg("\t"..id)
+    end
 end
 
 function module:Destroy()

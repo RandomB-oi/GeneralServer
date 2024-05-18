@@ -4,6 +4,7 @@ module.__index = module
 module.new = function(server, ip, port)
     local self = setmetatable({}, module)
     self.ConnectedServer = server
+    
     self.IP = ip
     self.Port = port
 
